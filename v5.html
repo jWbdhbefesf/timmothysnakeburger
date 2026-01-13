@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>uhmmmm name or smth</title>
+
+<style>
+:root {
+    --bg-main: #0b0d10;
+    --bg-panel: #12151b;
+    --border-soft: #1f2530;
+
+    --gold: #d4af37;
+    --gold-soft: rgba(212,175,55,0.25);
+
+    --royal-blue: #4169e1;
+    --royal-blue-soft: rgba(65,105,225,0.25);
+
+    --text-main: #e8e8e8;
+    --text-muted: #9aa4b2;
+}
+
+body {
+    margin: 0;
+    background: radial-gradient(circle at top, #111827, var(--bg-main));
+    color: var(--text-main);
+    font-family: system-ui, sans-serif;
+    text-align: center;
+}
+
+h1 {
+    margin: 24px 0 12px;
+    color: var(--gold);
+    text-shadow: 0 0 18px var(--gold-soft);
+}
+
+h3 {
+    color: var(--royal-blue);
+    text-shadow: 0 0 10px var(--royal-blue-soft);
+}
+
+button {
+    background: linear-gradient(180deg, #1b1f2a, #131722);
+    color: var(--gold);
+    border: 1px solid rgba(212,175,55,0.35);
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-weight: 600;
+}
+
+button:hover {
+    box-shadow: 0 0 14px var(--gold-soft);
+    transform: translateY(-1px);
+}
+
+.panel {
+    background: linear-gradient(180deg, #151923, var(--bg-panel));
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 18px;
+    margin: 14px auto;
+    width: 460px;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+}
+
+.inventory-controls {
+    margin-bottom: 10px;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
+}
+
+.inventory-card {
+    position: relative;
+    padding: 14px 10px 16px;
+    border-radius: 14px;
+    border: 1px solid currentColor;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.15));
+    box-shadow: 0 0 12px currentColor;
+}
+
+.inventory-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.inventory-count { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+
+.gear-btn { position: relative; margin: 8px; }
+.tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #0e1322, #0a0f1c);
+    border: 1px solid var(--royal-blue);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s;
+    box-shadow: 0 0 18px var(--royal-blue-soft);
+}
+.buff-tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #0e1322, #0a0f1c);
+    border: 1px solid var(--royal-blue);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s;
+    box-shadow: 0 0 18px var(--royal-blue-soft);
+    z-index: 2000;
+}
+
+.potion-indicator:hover .buff-tooltip {
+    opacity: 1;
+}
+.gear-btn:hover .tooltip { opacity: 1; }
+
+.slot {
+    border: 1px dashed var(--royal-blue);
+    border-radius: 12px;
+    padding: 12px;
+    margin: 8px;
+    color: var(--text-muted);
+}
+
+/* Countdown bar for active potions */
+.potion-timer-bar {
+    height: 6px;
+    width: 100%;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.potion-timer-fill {
+    height: 100%;
+    background: #4caf50;
+    width: 100%;
+    transition: width 0.2s linear;
+}
+
+#cutscene {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.star-rotate {
+    display: inline-block;
+    animation: spin 2s linear infinite;
+    z-index: 1;
+}
+
+.star {
+    width: 110px;
+    height: 110px;
+    background: currentColor;
+    clip-path: polygon(
+        50% 0%, 60% 40%, 100% 50%, 60% 60%,
+        50% 100%, 40% 60%, 0% 50%, 40% 40%
+    );
+    filter: drop-shadow(0 0 40px currentColor);
+    opacity: 0;
+    transform: scale(3);
+    animation: starCutscene 6.5s forwards;
+}
+
+.star.animate {
+    animation: starCutscene 6.5s forwards;
+}
+
+@keyframes starCutscene {
+    0% {
+        transform: scale(3) rotate(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1) rotate(540deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3) rotate(1000deg);
+        opacity: 1;
+    }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes fadeOut {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.white-fade {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.35), rgba(0,0,0,0.95));
+    opacity: 0;
+    pointer-events: none;
+}
+
+.white-fade.animate {
+    animation: fadeOut 1.2s ease forwards;
+}
+#buffIndicators {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    gap: 10px;
+    z-index: 1500;
+}
+.buff-icon-clip {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.potion-indicator {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #1b1f2a, #0f1320);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 12px rgba(0,0,0,0.6);
+    overflow: visible;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.potion-indicator img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.potion-indicator .count {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 4px black;
+}
+
+.potion-indicator .timer {
+    position: absolute;
+    display:none;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: #4caf50;
+}
+</style>
+</head>
+<body>
+
+<h1>version 41 yada yada horse orang boar tycoon yeah stuff</h1>
+<h2 style="color:red;">everything is subject 2 change (colors) cufucftrxdycccccccccccccccccbhjxdrtf wow! ok so cute</h2>
+
+<div class="panel">
+    <button onclick="roll()">Roll</button>
+    <button onclick="toggleAuto()">Auto Roll</button>
+    <div id="result"></div>
+</div>
+
+<div class="panel">
+    Luck: <b><span id="luck">0</span>%</b> |
+    Speed: <b><span id="speed">1</span>/sec</b>
+</div>
+
+<div class="panel">
+    <h3>Inventory</h3>
+    <div class="inventory-controls">
+        <button onclick="toggleInventory()">Collapse / Expand</button>
+        <button onclick="toggleSort()">Toggle Sort</button>
+    </div>
+    <div id="inventory" class="inventory-grid"></div>
+</div>
+
+<div class="panel">
+    <h3>Gear Slots</h3>
+    <div class="slot">Left: <span id="leftSlot">Empty</span></div>
+    <div class="slot">Right: <span id="rightSlot">Empty</span></div>
+</div>
+
+<div class="panel">
+    <h3>Craft Gear</h3>
+    <div id="gearList"></div>
+</div>
+
+<div class="panel">
+    <h3>Potions</h3>
+    <div id="potionList"></div>
+</div>
+
+<div id="cutscene">
+  <div class="white-fade"></div>
+  <div class="star-rotate">
+    <div class="star"></div>
+  </div>
+</div>
+<div id="buffIndicators"></div>
+
+<script>
+const rarities = [
+    { name: "Common", denominator: 2, color: "#b0b0b0" },
+    { name: "Uncommon", denominator: 4, color: "#4caf50" },
+    { name: "Rare", denominator: 8, color: "#4169e1" },
+    { name: "Epic", denominator: 16, color: "#d4af37" },
+    { name: "Legendary", denominator: 32, color: "#FF4242" },
+    { name: "Windy", denominator: 48, color: "#E8FFFF" },
+    { name: "Mythic", denominator: 64, color: "#CA99FF" },
+    { name: "Shimmer", denominator: 96, color: "#8B66FF" },
+    { name: "Exotic", denominator: 128, color: "#FB91FF" },
+    { name: "Unreal", denominator: 256, color: "#FF3A1C" },
+    { name: "Shade", denominator: 300, color: "black" },
+    { name: "Divine", denominator: 350, color: "#FAFFBD" },
+    { name: "Parasite", denominator: 400, color: "#3B0069" },
+    { name: "Glacial", denominator: 500, color: "#A3E8FF" },
+    { name: "Guilded", denominator: 512, color: "#F2C65E" },
+    { name: "Volcanic", denominator: 600, color: "#FF7A33" },
+    { name: "Meteoric", denominator: 750, color: "#4D1B00" },
+    { name: "Jackpot", denominator: 777, color: "#FFE63B" },
+    { name: "Solar", denominator: 800, color: "#FFF391" },
+    { name: "Lunar", denominator: 825, color: "#8E6BFF" },
+    { name: "Runic", denominator: 1300, color: "#105700" },
+	{ name: "Cursed", denominator: 1450, color: "#4A0033" },
+    { name: "Spectral", denominator: 1500, color: "white" },
+    { name: "Blaze", denominator: 2000, color: "orange" },
+    { name: "Celestial", denominator: 2500, color: "#C2F2FF" },
+    { name: "Galaxy", denominator: 5000, color: "#6C17FF" },
+    { name: "Chromatic", denominator: 20000, color: "red" },
+    { name: "Ethereal", denominator: 25000, color: "#FAD9FC" },
+    { name: "Cosmic", denominator: 50000, color: "#A57DFF" },
+    { name: "Chromatic : Monochrome", denominator: 60000, color: "gray" },
+    { name: "thing", denominator: 100000, color: "white" },
+];
+
+const gears = {
+    "Quick Glove": { slot: "left", speed: 2.5, cost: { Rare: 3 } },
+    "Luck Glove": { slot: "right", luck: 25, cost: { Uncommon: 25, Rare: 5 } },
+    "Fast Glove": { slot: "left", speed: 5, cost: { Windy: 10, Exotic: 1, Rare: 5 } },
+    "Eclipsed Device": { slot: "right", luck: 100, speed: 2.5, cost: { Lunar: 3, Solar: 3, Meteoric: 1, Windy: 5, } },
+    "Obsidian Device": { slot: "right", luck: 250, speed: 10, cost: { Volcanic: 15, Glacial: 20, Windy: 25, } },
+};
+
+const gearIcons = {
+    "Quick Glove": "https://raw.githubusercontent.com/taCCat2/JimSnakeburger3/refs/heads/main/quickglove.png",
+    "Luck Glove": "https://raw.githubusercontent.com/taCCat2/JimSnakeburger3/refs/heads/main/luckglove.png",
+    "Fast Glove": "https://raw.githubusercontent.com/taCCat2/JimSnakeburger3/refs/heads/main/fastglove.png",
+    "Eclipsed Device": "https://raw.githubusercontent.com/taCCat2/JimSnakeburger3/refs/heads/main/eclipseddevice.png",
+    "Obsidian Device": "https://raw.githubusercontent.com/taCCat2/JimSnakeburger3/refs/heads/main/placeholder.png",
+};
+
+const potions = {
+    "Luck Potion": { luck: 50, duration: 120, cost: { Common: 5, Uncommon: 2 } },
+    "Heavenly Potion": { luck: 2000, duration: 1, singleUse: true, cost: { Celestial: 2, Exotic: 1, Guilded: 5 } }
+};
+
+const potionIcons = {
+    "Luck Potion": "https://raw.githubusercontent.com/jWbdhbefesf/timmothysnakeburger/refs/heads/main/%2B50%25%20Luck.png",
+    "Heavenly Potion": "https://raw.githubusercontent.com/jWbdhbefesf/timmothysnakeburger/refs/heads/main/HeavenlyPotion.png"
+};
+
+let inventory = {};
+let ownedGears = {};
+let equipped = { left: null, right: null };
+let lastRollTime = 0;
+let activePotions = [];
+let auto = false, timer;
+let inventoryCollapsed = false;
+let sortDescending = true;
+
+rarities.forEach(r => inventory[r.name] = 0);
+
+// ===== LOCALSTORAGE SAVE & LOAD =====
+function saveGame() {
+    const data = {
+        inventory,
+        ownedGears,
+        equipped: {
+            left: equipped.left ? Object.keys(gears).find(k=>gears[k]===equipped.left) : null,
+            right: equipped.right ? Object.keys(gears).find(k=>gears[k]===equipped.right) : null
+        },
+        activePotions,
+        auto,
+        inventoryCollapsed,
+        sortDescending
+    };
+    localStorage.setItem("solsRNGSave", JSON.stringify(data));
+}
+
+function loadGame() {
+    const data = JSON.parse(localStorage.getItem("solsRNGSave"));
+    if (!data) return;
+
+    inventory = data.inventory || inventory;
+    ownedGears = data.ownedGears || ownedGears;
+    equipped.left = data.equipped.left ? gears[data.equipped.left] : null;
+    equipped.right = data.equipped.right ? gears[data.equipped.right] : null;
+    activePotions = data.activePotions || [];
+    // Normalize single-use potion stacking after load
+activePotions = activePotions.flatMap(p => {
+    if (p.singleUse && p.count) {
+        return Array.from({ length: p.count }, () => ({
+            name: p.name,
+            luck: p.luck,
+            singleUse: true
+        }));
+    }
+    return p;
+});
+    auto = data.auto || false;
+    inventoryCollapsed = data.inventoryCollapsed || false;
+    sortDescending = data.sortDescending !== undefined ? data.sortDescending : true;
+
+    updateUI();
+
+    if (auto) toggleAuto();
+}
+
+const getLuck = () => {
+    let gearLuck = Object.values(equipped)
+        .reduce((s,g)=>s+(g?.luck||0),0);
+
+    let timedLuck = activePotions
+        .filter(p => !p.singleUse && (!p.expires || p.expires > Date.now()))
+        .reduce((s,p)=>s+(p?.luck||0),0);
+
+    return gearLuck + timedLuck;
+};
+
+const getSpeed = () => 1 + Object.values(equipped).reduce((s,g)=>s+(g?.speed||0),0);
+
+function roll() {
+  const heavenlyIndex = activePotions.findIndex(p => p.singleUse);
+const heavenlyLuck = heavenlyIndex !== -1 ? activePotions[heavenlyIndex].luck : 0;
+    const now = Date.now();
+    const cooldown = 1000 / getSpeed();
+
+    if (now - lastRollTime < cooldown) return;
+    lastRollTime = now;
+
+    // Remove expired potions
+    activePotions = activePotions.filter(p => !p.expires || p.expires > now);
+
+    // Calculate total luck (can exceed 100%)
+    const luck = getLuck() + heavenlyLuck;
+
+    // Determine which rarities are eligible for this roll
+    // Each 100% luck skips one rarity, but never go past the last one
+    const luckIndex = Math.min(Math.floor(luck / 100), rarities.length - 1);
+    const table = rarities.slice(luckIndex);
+
+    if (table.length === 0) {
+        console.warn("No rarities available for roll — check your luck calculation.");
+        return;
+    }
+
+    // Weighted random selection based on 1/denominator
+    const totalWeight = table.reduce((sum, r) => sum + 1 / r.denominator, 0);
+    let rand = Math.random() * totalWeight;
+
+    for (let r of table) {
+        rand -= 1 / r.denominator;
+        if (rand <= 0) {
+            inventory[r.name] = (inventory[r.name] || 0) + 1;
+            showResult(r);
+            updateUI();
+            if (heavenlyIndex !== -1) {
+    activePotions.splice(heavenlyIndex, 1);
+}
+            updateBuffIndicators();
+            saveGame();
+            break;
+        }
+    }
+}
+
+function showResult(r) {
+    document.getElementById("result").innerHTML = `
+        <div class="inventory-card" style="color:${r.color}">
+            <div class="inventory-name">${r.name}</div>
+            <div class="inventory-count">+1</div>
+        </div>`;
+    if (r.denominator >= 10000) playCutscene(r.color);
+}
+
+function playCutscene(color) {
+    const cs = document.getElementById("cutscene");
+    const star = cs.querySelector(".star");
+    const fade = cs.querySelector(".white-fade");
+
+    cs.style.display = "flex";
+    star.style.color = color;
+
+    star.classList.remove("animate");
+    fade.classList.remove("animate");
+    fade.style.opacity = 0;
+    void star.offsetWidth;
+
+    star.classList.add("animate");
+
+    setTimeout(() => { fade.classList.add("animate"); }, 5000);
+    setTimeout(() => {
+        cs.style.display = "none";
+        star.classList.remove("animate");
+        fade.classList.remove("animate");
+    }, 6500);
+}
+
+function toggleAuto() {
+    auto = !auto;
+    clearInterval(timer);
+    if (auto) timer = setInterval(roll, 50);
+    saveGame();
+}
+
+function toggleInventory() {
+    inventoryCollapsed = !inventoryCollapsed;
+    updateUI();
+    saveGame();
+}
+
+function toggleSort() {
+    sortDescending = !sortDescending;
+    updateUI();
+    saveGame();
+}
+
+function showPopup(message, duration = 2000) {
+    let popup = document.getElementById("gamePopup");
+    if (!popup) {
+        popup = document.createElement("div");
+        popup.id = "gamePopup";
+        popup.style.position = "fixed";
+        popup.style.top = "20px";
+        popup.style.left = "50%";
+        popup.style.transform = "translateX(-50%)";
+        popup.style.padding = "12px 24px";
+        popup.style.background = "rgba(0,0,0,0.85)";
+        popup.style.color = "var(--gold)";
+        popup.style.border = "1px solid var(--gold)";
+        popup.style.borderRadius = "12px";
+        popup.style.fontWeight = "600";
+        popup.style.zIndex = "2000";
+        popup.style.boxShadow = "0 0 16px var(--gold-soft)";
+        document.body.appendChild(popup);
+    }
+    popup.textContent = message;
+    popup.style.opacity = "1";
+    setTimeout(() => {
+        popup.style.transition = "opacity 0.5s";
+        popup.style.opacity = "0";
+        setTimeout(() => popup.style.transition = "", 500);
+    }, duration);
+}
+
+function craftGear(name) {
+    const g = gears[name];
+    if (!g) return showPopup("Gear not found!");
+    if (ownedGears[name]) return showPopup(`${name} is already crafted!`);
+    for (let [mat, amt] of Object.entries(g.cost)) {
+        if ((inventory[mat] || 0) < amt) return showPopup(`Not enough ${mat} to craft ${name}`);
+    }
+    for (let [mat, amt] of Object.entries(g.cost)) inventory[mat] -= amt;
+    ownedGears[name] = true;
+    const slot = g.slot;
+    if (!equipped[slot]) {
+        equipped[slot] = g;
+    } else {
+        showPopup(`${name} crafted! Slot ${slot} already occupied, not auto-equipped.`);
+    }
+    updateUI();
+    saveGame();
+    showPopup(`${name} crafted!`);
+}
+function equipGear(name) {
+    if (!ownedGears[name]) return showPopup("You don't own this gear!");
+    const gear = gears[name];
+    const slot = gear.slot;
+
+    // Unequip if already equipped
+    if (equipped[slot] === gear) {
+        equipped[slot] = null;
+        showPopup(`${name} unequipped.`);
+    } else {
+        equipped[slot] = gear;
+        showPopup(`${name} equipped to ${slot} slot.`);
+    }
+
+    updateUI();
+    saveGame();
+}
+
+function unequipSlot(slot) {
+    if (!equipped[slot]) return;
+    const name = Object.keys(gears).find(k => gears[k] === equipped[slot]);
+    equipped[slot] = null;
+    showPopup(`${name} unequipped.`);
+    updateUI();
+    saveGame();
+}
+
+function craftPotion(name) {
+    const p = potions[name];
+    if (!p) return showPopup("Potion not found!");
+    for (let [mat, amt] of Object.entries(p.cost)) {
+        if ((inventory[mat] || 0) < amt) return showPopup(`Not enough ${mat} to craft ${name}`);
+    }
+    for (let [mat, amt] of Object.entries(p.cost)) inventory[mat] -= amt;
+    inventory[name] = (inventory[name] || 0) + 1;
+    updateUI();
+    saveGame();
+    showPopup(`${name} crafted!`);
+}
+
+function usePotion(name) {
+    if ((inventory[name] || 0) <= 0) return showPopup(`No ${name} left!`);
+    const p = potions[name];
+    inventory[name]--;
+
+    const now = Date.now();
+
+    if (p.singleUse) {
+    activePotions.push({
+        name,
+        luck: p.luck,
+        singleUse: true
+    });
+    showPopup(`${name} used! Next roll massively boosted!`);
+    } else {
+        let existing = activePotions.find(ap => ap.name === name);
+        if (existing) existing.expires += p.duration * 1000;
+        else activePotions.push({
+            name,
+            luck: p.luck,
+            expires: now + p.duration * 1000
+        });
+        showPopup(`${name} activated! +${p.duration}s`);
+    }
+
+    updateUI();
+    saveGame();
+}
+function updateBuffIndicators() {
+    const container = document.getElementById("buffIndicators");
+    if (!container) return;
+
+    const now = Date.now();
+    let html = "";
+
+    /* ===== GEAR BUFFS ===== */
+    for (const slot of ["left", "right"]) {
+        const gear = equipped[slot];
+        if (!gear) continue;
+
+        const name = Object.keys(gears).find(k => gears[k] === gear);
+        const icon = gearIcons[name];
+        if (!icon) continue;
+
+        html += `
+            <div class="potion-indicator">
+    <div class="buff-icon-clip">
+        <img src="${icon}">
+    </div>
+                <div class="count">${slot}</div>
+
+                <div class="buff-tooltip">
+                    <b>${name}</b><br>
+                    Slot: ${slot}<br>
+                    ${gear.luck ? `Luck +${gear.luck}%<br>` : ""}
+                    ${gear.speed ? `Speed +${gear.speed}` : ""}
+                </div>
+            </div>
+        `;
+    }
+
+    /* ===== POTION BUFFS ===== */
+    const grouped = {};
+
+    for (let p of activePotions) {
+        if (p.singleUse) {
+            if (!grouped[p.name]) grouped[p.name] = { count: 0, potion: p };
+            grouped[p.name].count++;
+        } else if (!p.expires || p.expires > now) {
+            grouped[p.name] = { potion: p };
+        }
+    }
+
+    for (const [name, data] of Object.entries(grouped)) {
+        const p = data.potion;
+        const icon = potionIcons[name] || "";
+
+        let label = "";
+        let timerBar = "";
+
+        if (p.singleUse) {
+            label = `${data.count}x`;
+        } else if (p.expires) {
+            const remaining = Math.max(0, Math.ceil((p.expires - now) / 1000));
+            label = `${remaining}s`;
+            const pct = (p.expires - now) / (potions[name].duration * 1000);
+            timerBar = `<div class="timer" style="width:${pct * 100}%"></div>`;
+        }
+
+        html += `
+            <div class="potion-indicator">
+    <div class="buff-icon-clip">
+        <img src="${icon}">
+    </div>
+                <div class="count">${label}</div>
+                ${timerBar}
+
+                <div class="buff-tooltip">
+                    <b>${name}</b><br>
+                    Luck +${p.luck}<br>
+                    ${
+                        p.singleUse
+                            ? "Next roll only"
+                            : `Time left: ${Math.max(
+                                0,
+                                Math.ceil((p.expires - now) / 1000)
+                            )}s`
+                    }
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function updateUI() {
+    document.getElementById("luck").textContent = getLuck();
+    document.getElementById("speed").textContent = getSpeed();
+
+    const inv = document.getElementById("inventory");
+    if (inventoryCollapsed) inv.innerHTML = "<i style='color:var(--text-muted)'>Inventory collapsed</i>";
+    else {
+        let invItems = rarities.filter(r => inventory[r.name] > 0)
+            .sort((a,b)=>sortDescending ? b.denominator - a.denominator : a.denominator - b.denominator);
+        inv.innerHTML = invItems.map(r => {
+    const percent = (100 / r.denominator).toFixed(3);
+
+    return `
+        <div class="inventory-card" style="color:${r.color}">
+            <div class="inventory-name">${r.name}</div>
+            <div class="inventory-count">${inventory[r.name]}</div>
+
+            <div class="rarity-tooltip">
+                Chance: 1 / ${r.denominator}<br>
+                (${percent}%)
+            </div>
+        </div>
+    `;
+}).join("");
+    }
+
+    document.getElementById("leftSlot").textContent = equipped.left ? Object.keys(gears).find(k=>gears[k]===equipped.left) : "Empty";
+    document.getElementById("rightSlot").textContent = equipped.right ? Object.keys(gears).find(k=>gears[k]===equipped.right) : "Empty";
+
+    document.getElementById("gearList").innerHTML = Object.entries(gears).map(([name,g])=>{
+    const isOwned = ownedGears[name];
+    const isEquipped = equipped[g.slot] === g;
+
+    return `
+        <div class="gear-btn">
+            <button onclick="${isOwned ? `equipGear('${name}')` : `craftGear('${name}')`}"
+                ${!isOwned && ownedGears[name] ? "disabled" : ""}>
+                ${
+                    isOwned
+                        ? (isEquipped ? "Unequip " + name : "Equip " + name)
+                        : "Craft " + name
+                }
+            </button>
+
+            <div class="tooltip">
+                Slot: ${g.slot}<br>
+                ${g.luck ? `Luck +${g.luck}%<br>` : ""}
+                ${g.speed ? `Speed +${g.speed}<br>` : ""}
+                Cost: ${Object.entries(g.cost).map(([k,v])=>`${v} ${k}`).join(", ")}
+            </div>
+        </div>
+    `;
+}).join("");
+
+    document.getElementById("potionList").innerHTML = Object.entries(potions).map(([name,p])=>`
+    <div class="gear-btn">
+        <button onclick="craftPotion('${name}')">
+            Craft ${name}
+        </button>
+
+        <button onclick="usePotion('${name}')"
+            ${inventory[name] > 0 ? "" : "disabled style='opacity:0.5;cursor:not-allowed'"}>
+            Use ${name} (${inventory[name] || 0})
+        </button>
+
+        <div class="tooltip">
+            Luck +${p.luck}<br>
+            Duration: ${p.duration > 0 ? p.duration + "s" : "Next Roll Only"}<br>
+            Cost: ${Object.entries(p.cost).map(([k,v])=>`${v} ${k}`).join(", ")}
+        </div>
+    </div>
+`).join("");
+}
+
+setInterval(updateBuffIndicators, 1000);
+
+// LOAD GAME ON START
+loadGame();
+updateUI();
+</script>
+</body>
+</html>
